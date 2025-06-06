@@ -1,26 +1,102 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
   <title>SarkhoBook</title>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="style.css" />
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <style>
+    body { font-family: Arial; padding: 20px; background: #f0f2f5; }
+    #feed { margin-top: 30px; }
+    .post { background: #fff; padding: 15px; border-radius: 6px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    textarea { width: 100%; height: 60px; }
+  </style>
 </head>
 <body>
-  <div id="app">
-    <h1>Welcome to SarkhoBook</h1>
 
-    <div id="auth-section">
-      <input type="email" id="email" placeholder="Email" />
-      <input type="password" id="password" placeholder="Password" />
-      <button onclick="signup()">Sign Up</button>
-      <button onclick="login()">Login</button>
-      <button onclick="logout()">Logout</button>
-    </div>
+  <h1>SarkhoBook 📘</h1>
 
-    <p id="status"></p>
+  <div id="auth-section">
+    <input type="email" id="email" placeholder="Email"><br><br>
+    <input type="password" id="password" placeholder="Password"><br><br>
+    <button onclick="signup()">Signup</button>
+    <button onclick="login()">Login</button>
+    <button onclick="logout()">Logout</button>
   </div>
 
-  <script type="module" src="script.js"></script>
+  <div id="post-section" style="display:none;">
+    <h3>Post Something:</h3>
+    <textarea id="postText" placeholder="What's on your mind?"></textarea><br>
+    <button onclick="submitPost()">Post</button>
+  </div>
+
+  <div id="feed"></div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAJJPYVzcbMIXpytP_pTlKv4lweqJWTE1Q",
+      authDomain: "sarkhobook.firebaseapp.com",
+      projectId: "sarkhobook",
+      storageBucket: "sarkhobook.firebasestorage.app",
+      messagingSenderId: "807208608521",
+      appId: "1:807208608521:web:af7ea73ff4b79fd44d29d8"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        document.getElementById("post-section").style.display = "block";
+        loadPosts();
+      } else {
+        document.getElementById("post-section").style.display = "none";
+      }
+    });
+
+    function signup() {
+      const email = document.getElementById("email").value;
+      const pass = document.getElementById("password").value;
+      auth.createUserWithEmailAndPassword(email, pass).catch(alert);
+    }
+
+    function login() {
+      const email = document.getElementById("email").value;
+      const pass = document.getElementById("password").value;
+      auth.signInWithEmailAndPassword(email, pass).catch(alert);
+    }
+
+    function logout() {
+      auth.signOut();
+    }
+
+    function submitPost() {
+      const text = document.getElementById("postText").value;
+      const user = auth.currentUser;
+      if (text && user) {
+        db.collection("posts").add({
+          text: text,
+          user: user.email,
+          time: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(() => {
+          document.getElementById("postText").value = "";
+          loadPosts();
+        });
+      }
+    }
+
+    function loadPosts() {
+      db.collection("posts").orderBy("time", "desc").get().then(snapshot => {
+        const feed = document.getElementById("feed");
+        feed.innerHTML = "";
+        snapshot.forEach(doc => {
+          const post = doc.data();
+          feed.innerHTML += `<div class="post"><b>${post.user}</b><br>${post.text}</div>`;
+        });
+      });
+    }
+  </script>
 </body>
 </html>
