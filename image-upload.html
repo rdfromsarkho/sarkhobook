@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Upload Image</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h2>Upload Post</h2>
+    <input type="file" id="imageInput"><br><br>
+    <button onclick="uploadImage()">Upload</button>
+    <p id="message"></p>
+    <div id="preview"></div>
+  </div>
+
+  <script type="module">
+    import { storage } from './firebase-config.js';
+    import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-storage.js";
+
+    window.uploadImage = async function () {
+      const file = document.getElementById('imageInput').files[0];
+      if (!file) {
+        document.getElementById('message').innerText = "Please select an image.";
+        return;
+      }
+
+      const storageRef = ref(storage, 'posts/' + Date.now() + '_' + file.name);
+      uploadBytes(storageRef, file)
+        .then((snapshot) => getDownloadURL(snapshot.ref))
+        .then((url) => {
+          document.getElementById('message').innerText = "Upload successful!";
+          document.getElementById('preview').innerHTML = `<img src="${url}" style="width:100%;margin-top:10px;border-radius:6px;">`;
+        })
+        .catch((error) => {
+          document.getElementById('message').innerText = "Upload error: " + error.message;
+        });
+    };
+  </script>
+</body>
+</html>
